@@ -8,11 +8,24 @@ exports.getSubdomainsByProject = async (req, res) => {
   try {
     const subdomains = await Subdomain.find({ projectId: req.params.projectId })
       .sort({ subdomain: 1 });
-    
+
+    const subdomainsWithDetails = await Promise.all(
+      subdomains.map(async (sub) => {
+        const techStack = await TechStack.find({ subdomainId: sub._id });
+        const vulnerabilities = await Vulnerability.find({ subdomainId: sub._id });
+
+        return {
+          ...sub.toObject(),
+          techStack,
+          vulnerabilities
+        };
+      })
+    );
+
     res.json({
       success: true,
-      count: subdomains.length,
-      data: subdomains
+      count: subdomainsWithDetails.length,
+      data: subdomainsWithDetails
     });
   } catch (error) {
     res.status(500).json({
